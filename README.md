@@ -69,7 +69,7 @@ The Internet Archive folkscanomy upload (by "Sketch the Cow", February 2016) is 
 - MD0916-MD0919 -- Specialized Nursing Care modules
 - MD0950 -- Chemistry I
 
-HTML versions of all courses in the full MD-series are available at [armymedical.tpub.com](https://armymedical.tpub.com). Several are also available as PDFs at [nursing411.org](https://nursing411.org). If you obtain PDFs of any missing courses, place them in `html/pdfs/` using the naming convention `US_Army_Medical_Course_<Title>_<MDXXXX>.pdf`, add the corresponding entry to the `manuals` array in `html/index.html`, and rebuild with `--skip-download`.
+HTML versions of all courses in the full MD-series are available at [armymedical.tpub.com](https://armymedical.tpub.com). Several are also available as PDFs at [nursing411.org](https://nursing411.org). If you obtain PDFs of any missing courses, place them in `html/pdfs/` using the naming convention `US_Army_Medical_Course_<Title>_<MDXXXX>.pdf`, add the corresponding entry to the `manuals` array in `html/index.html`, and rebuild -- the script will detect the existing PDFs and skip the download automatically.
 
 ## Setup
 
@@ -107,20 +107,20 @@ chmod +x install.sh
 ```
 
 This will:
-- Download each PDF individually from archive.org (~30 files, modest total size)
+- Download all PDFs from archive.org as a single zip
 - Extract PDFs into `html/pdfs/`
 - Build `army_medical_course.zim` in the current directory
 - Copy the ZIM to your Kiwix library directory with correct ownership
 - Register it with the Kiwix library XML
 - Restart the Kiwix container
 
-Failed downloads are skipped with a warning and listed at the end of the download step. Re-run without `--skip-download` to retry any that failed -- files already present are skipped automatically.
+If the download gets interrupted just re-run -- wget will resume where it left off and the script will offer to reuse the partial zip.
 
 ## Script Options
 
 | Option | Description |
 |--------|-------------|
-| `--skip-download` | Skip the PDF download, use existing files in `html/pdfs/` |
+| `--download` | Force a fresh download even if PDFs already exist in `html/pdfs/` |
 | `--skip-zim` | Skip the ZIM build, just download the PDFs |
 | `--deploy` | Automatically deploy to Kiwix after building (requires `--zim-dest` and `--container`) |
 | `--zim-dest=PATH` | Path to your Kiwix library directory on the host |
@@ -128,10 +128,10 @@ Failed downloads are skipped with a warning and listed at the end of the downloa
 
 ## Rebuilding
 
-If you update `index.html` or add more PDFs, re-run with `--skip-download` and `--deploy`:
+If you update `index.html` or add more PDFs, re-run with `--deploy`. The script will detect existing PDFs and skip the download automatically:
 
 ```bash
-./install.sh --skip-download \
+./install.sh \
   --deploy \
   --zim-dest=/your/kiwix/library \
   --container=your_kiwix_container
@@ -139,7 +139,16 @@ If you update `index.html` or add more PDFs, re-run with `--skip-download` and `
 
 **Project Nomad users:**
 ```bash
-./install.sh --skip-download \
+./install.sh \
+  --deploy \
+  --zim-dest=/opt/project-nomad/storage/zim \
+  --container=nomad_kiwix_server
+```
+
+To force a fresh download at the same time, add `--download`:
+
+```bash
+./install.sh --download \
   --deploy \
   --zim-dest=/opt/project-nomad/storage/zim \
   --container=nomad_kiwix_server
