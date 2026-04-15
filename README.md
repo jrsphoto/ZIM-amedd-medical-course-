@@ -141,3 +141,4 @@ The script removes any existing entries for this ZIM from the Kiwix library befo
 
 All documents are public domain US government publications sourced from:
 https://archive.org/search?query=US+Army+Medical+Course&and[]=collection%3A%22folkscanomy%22
+# ZIM-amedd-medical-course-
