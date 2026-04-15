@@ -5,7 +5,7 @@
 #
 # This script will:
 #   1. Check dependencies
-#   2. Download all PDFs from archive.org individually
+#   2. Download all PDFs from archive.org as a single zip
 #   3. Extract PDFs into html/pdfs/
 #   4. Build the ZIM file
 #   5. Print deployment instructions
@@ -36,47 +36,7 @@ HTML_DIR="${SCRIPT_DIR}/html"
 PDF_DIR="${HTML_DIR}/pdfs"
 ZIM_OUT="${SCRIPT_DIR}/army_medical_course.zim"
 
-# Each entry is: "IA_IDENTIFIER|output_filename.pdf"
-# The IA compress URL pattern is:
-#   https://archive.org/compress/<IDENTIFIER>/formats=TEXT%20PDF,...
-# We download the zip and extract the PDF from it, renaming to match
-# what index.html expects (US_Army_Medical_Course_<Title>_<MDXXXX>.pdf).
-
-declare -a COURSE_LIST=(
-  "US_Army_Medical_Course_Basic_Human_Anatomy_MD0006|US_Army_Medical_Course_Basic_Human_Anatomy_MD0006.pdf"
-  "US_Army_Medical_Course_Basic_Human_Physiology_MD0007|US_Army_Medical_Course_Basic_Human_Physiology_MD0007.pdf"
-  "US_Army_Medical_Course_Basic_Medical_Terminology_MD0010|US_Army_Medical_Course_Basic_Medical_Terminology_MD0010.pdf"
-  "US_Army_Medical_Course_Wastewater_Treatment_MD0161|US_Army_Medical_Course_Wastewater_Treatment_MD0161.pdf"
-  "US_Army_Medical_Course_Arthropod_Control_MD0171|US_Army_Medical_Course_Arthropod_Control_MD0171.pdf"
-  "US_Army_Medical_Course_Oral_And_Maxillofacial_Pathology_MD0511|US_Army_Medical_Course_Oral_and_Maxillofacial_Pathology_MD0511.pdf"
-  "US_Army_Medical_Course_Taking_Vital_Signs_MD0531|US_Army_Medical_Course_Taking_Vital_Signs_MD0531.pdf"
-  "US_Army_Medical_Course_Cardiopulmonary_Resuscitation_CPR_MD0532|US_Army_Medical_Course_Cardiopulmonary_Resuscitation_CPR_MD0532.pdf"
-  "US_Army_Medical_Course_Treating_Fractures_in_the_Field_MD0533|US_Army_Medical_Course_Treating_Fractures_in_the_Field_MD0533.pdf"
-  "US_Army_Medical_Course_Sterile_Procedures_MD0540|US_Army_Medical_Course_Sterile_Procedures_MD0540.pdf"
-  "US_Army_Medical_Course_Eye_Ear_and_Nose_Injuries_MD0547|US_Army_Medical_Course_Eye_Ear_and_Nose_Injuries_MD0547.pdf"
-  "US_Army_Medical_Course_Environmental_Injuries_MD0548|US_Army_Medical_Course_Environmental_Injuries_MD0548.pdf"
-  "US_Army_Medical_Course_Psychosocial_Issues_MD0549|US_Army_Medical_Course_Psychosocial_Issues_MD0549.pdf"
-  "US_Army_Medical_Course_Treating_Wounds_in_the_Field_MD0554|US_Army_Medical_Course_Treating_Wounds_in_the_Field_MD0554.pdf"
-  "US_Army_Medical_Course_Basic_Patient_Care_Procedures_MD0556|US_Army_Medical_Course_Basic_Patient_Care_Procedures_MD0556.pdf"
-  "US_Army_Medical_Course_The_Musculoskeletal_System_MD0577|US_Army_Medical_Course_The_Musculoskeletal_System_MD0577.pdf"
-  "US_Army_Medical_Course_Food_Containers_MD0708|US_Army_Medical_Course_Food_Containers_MD0708.pdf"
-  "US_Army_Medical_Course_Waterfoods_MD0711|US_Army_Medical_Course_Waterfoods_MD0711.pdf"
-  "US_Army_Medical_Course_Prescription_Interpretation_MD0801|US_Army_Medical_Course_Prescription_Interpretation_MD0801.pdf"
-  "US_Army_Medical_Course_Pharmaceutical_Calculations_MD0802|US_Army_Medical_Course_Pharmaceutical_Calculations_MD0802.pdf"
-  "US_Army_Medical_Course_Pharmacology_I_MD0804|US_Army_Medical_Course_Pharmacology_I_MD0804.pdf"
-  "US_Army_Medical_Course_Pharmacology_II_MD0805|US_Army_Medical_Course_Pharmacology_II_MD0805.pdf"
-  "US_Army_Medical_Course_Pharmacology_III_MD0806|US_Army_Medical_Course_Pharmacology_III_MD0806.pdf"
-  "US_Army_Medical_Course_Hematology_I_MD0853|US_Army_Medical_Course_Hematology_I_MD0853.pdf"
-  "US_Army_Medical_Course_Mycology_MD0859|US_Army_Medical_Course_Mycology_MD0859.pdf"
-  "US_Army_Medical_Course_Basic_Electrical_Circuits_MD0903|US_Army_Medical_Course_Basic_Electrical_Circuits_MD0903.pdf"
-  "US_Army_Medical_Course_Nursing_Fundamentals_I_MD0905|US_Army_Medical_Course_Nursing_Fundamentals_I_MD0905.pdf"
-  "US_Army_Medical_Course_Nursing_Fundamentals_II_MD0906|US_Army_Medical_Course_Nursing_Fundamentals_II_MD0906.pdf"
-  "US_Army_Medical_Course_Special_Surgical_Procedures_II_MD0928|US_Army_Medical_Course_Special_Surgical_Procedures_II_MD0928.pdf"
-  "US_Army_Medical_Course_Scrub_Gown_and_Glove_Procedures_MD0933|US_Army_Medical_Course_Scrub_Gown_and_Glove_Procedures_MD0933.pdf"
-)
-
-IA_BASE="https://archive.org/compress"
-IA_FORMATS="formats=TEXT%20PDF,ARCHIVE%20BITTORRENT,METADATA,ITEM%20TILE"
+ARCHIVE_URL="https://archive.org/compress/us-army-medical-course/formats=TEXT%20PDF,ARCHIVE%20BITTORRENT,METADATA"
 
 SKIP_DOWNLOAD=0
 SKIP_ZIM=0
@@ -151,80 +111,54 @@ check_deps() {
 
 download_pdfs() {
   echo -e "${BOLD}Step 1: Downloading PDF collection from archive.org${NC}"
-  echo ""
-  echo -e "  Downloading ${#COURSE_LIST[@]} course files individually."
-  echo -e "  Each is fetched as a zip from IA's compress endpoint, the PDF"
-  echo -e "  extracted, and the zip discarded. Failed items are skipped with"
-  echo -e "  a warning so the rest of the run can continue."
+  echo -e "  ${CYN}URL:${NC} ${ARCHIVE_URL}"
   echo ""
 
   mkdir -p "$PDF_DIR"
 
-  local tmp_zip="${SCRIPT_DIR}/_tmp_course.zip"
-  local total=${#COURSE_LIST[@]}
-  local idx=0
-  local failed=0
+  local tmp_zip="${SCRIPT_DIR}/medical_course_download.zip"
 
-  for entry in "${COURSE_LIST[@]}"; do
-    idx=$((idx + 1))
-    local identifier="${entry%%|*}"
-    local dest_pdf="${entry##*|}"
-    local dest_path="${PDF_DIR}/${dest_pdf}"
-    local url="${IA_BASE}/${identifier}/${IA_FORMATS}"
-
-    printf "  [%2d/%d]  %s\n" "$idx" "$total" "$identifier"
-
-    if [[ -f "$dest_path" ]]; then
-      echo -e "          ${YLW}[SKIP]${NC}  already exists"
-      continue
-    fi
-
-    # Download zip
-    if ! wget \
-        --quiet \
-        --tries=3 \
-        --timeout=120 \
-        --waitretry=15 \
-        --user-agent="Mozilla/5.0 (compatible; personal-archive-downloader)" \
-        -O "$tmp_zip" \
-        "$url" 2>&1; then
-      echo -e "          ${RED}[FAIL]${NC}  download error -- skipping"
+  if [[ -f "$tmp_zip" ]]; then
+    echo -e "  ${YLW}[INFO]${NC}  Found existing download at ${tmp_zip}"
+    read -rp "  Re-use it? [Y/n]: " reuse
+    reuse="${reuse:-Y}"
+    if [[ "$reuse" =~ ^[Nn]$ ]]; then
       rm -f "$tmp_zip"
-      failed=$((failed + 1))
-      continue
     fi
+  fi
 
-    # Extract the first PDF found in the zip, rename to our target
-    local pdf_in_zip
-    pdf_in_zip=$(unzip -l "$tmp_zip" 2>/dev/null | grep -i '\.pdf$' | awk '{print $NF}' | head -1)
+  if [[ ! -f "$tmp_zip" ]]; then
+    echo -e "  ${YLW}[GET]${NC}   Downloading zip..."
+    wget \
+      --progress=bar:force \
+      --tries=3 \
+      --timeout=300 \
+      --waitretry=30 \
+      --continue \
+      --user-agent="Mozilla/5.0 (compatible; personal-archive-downloader)" \
+      -O "$tmp_zip" \
+      "$ARCHIVE_URL"
+    echo ""
+  fi
 
-    if [[ -z "$pdf_in_zip" ]]; then
-      echo -e "          ${RED}[FAIL]${NC}  no PDF found in zip -- skipping"
-      rm -f "$tmp_zip"
-      failed=$((failed + 1))
-      continue
-    fi
-
-    unzip -o -j "$tmp_zip" "$pdf_in_zip" -d "$PDF_DIR" &>/dev/null
-    # Rename the extracted file to our canonical name
-    local extracted_name
-    extracted_name=$(basename "$pdf_in_zip")
-    if [[ "$extracted_name" != "$dest_pdf" ]]; then
-      mv "${PDF_DIR}/${extracted_name}" "$dest_path"
-    fi
-
-    rm -f "$tmp_zip"
-    echo -e "          ${GRN}[OK]${NC}"
-    sleep 1  # be polite to archive.org
-  done
-
+  echo -e "  ${YLW}[INFO]${NC}  Extracting PDFs to ${PDF_DIR}..."
   echo ""
+
+  unzip -o -j "$tmp_zip" "*.pdf" -d "$PDF_DIR" 2>&1 | \
+    grep -E "inflating|extracting" | \
+    awk '{print "  extracting: " $NF}' || true
+
   local pdf_count
   pdf_count=$(find "$PDF_DIR" -name "*.pdf" | wc -l)
-  echo -e "  ${GRN}[DONE]${NC}  ${pdf_count} PDFs in ${PDF_DIR}  (${failed} failed)"
-  if [[ $failed -gt 0 ]]; then
-    echo -e "  ${YLW}[WARN]${NC}  ${failed} course(s) failed. Check slugs manually and re-run"
-    echo -e "         without --skip-download to retry missing files."
+  echo ""
+  echo -e "  ${GRN}[OK]${NC}   ${pdf_count} PDFs extracted to ${PDF_DIR}"
+  echo ""
+
+  read -rp "  Delete the downloaded zip file to save disk space? [Y/n]: " cleanup
+  cleanup="${cleanup:-Y}"
+  if [[ ! "$cleanup" =~ ^[Nn]$ ]]; then
+    rm -f "$tmp_zip"
+    echo -e "  ${YLW}[INFO]${NC}  Zip removed."
   fi
   echo ""
 }
