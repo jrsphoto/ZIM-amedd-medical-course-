@@ -8,6 +8,8 @@ This project packages public domain Army medical correspondence courses into a Z
 
 The web interface has search and discipline filtering, with a VIEW button for each document.
 
+![Medical Course Archive UI](screenshot.png)
+
 ## Directory Structure
 
 ```
