@@ -96,6 +96,14 @@ chmod +x install.sh
   --container=your_kiwix_container
 ```
 
+**Project Nomad users:**
+```bash
+./install.sh \
+  --deploy \
+  --zim-dest=/opt/project-nomad/storage/zim \
+  --container=nomad_kiwix_server
+```
+
 This will:
 - Download each PDF individually from archive.org (~30 files, modest total size)
 - Extract PDFs into `html/pdfs/`
@@ -127,6 +135,14 @@ If you update `index.html` or add more PDFs, re-run with `--skip-download` and `
   --container=your_kiwix_container
 ```
 
+**Project Nomad users:**
+```bash
+./install.sh --skip-download \
+  --deploy \
+  --zim-dest=/opt/project-nomad/storage/zim \
+  --container=nomad_kiwix_server
+```
+
 The script removes any existing entries for this ZIM from the Kiwix library before re-adding, so no duplicates accumulate over time.
 
 ## Dependencies
@@ -141,4 +157,3 @@ The script removes any existing entries for this ZIM from the Kiwix library befo
 
 All documents are public domain US government publications sourced from:
 https://archive.org/search?query=US+Army+Medical+Course&and[]=collection%3A%22folkscanomy%22
-# ZIM-amedd-medical-course-
