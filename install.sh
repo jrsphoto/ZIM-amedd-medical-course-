@@ -298,9 +298,16 @@ deploy() {
   echo ""
 }
 
+banner
+check_deps
+
 pdf_count=$(find "$PDF_DIR" -name "*.pdf" 2>/dev/null | wc -l)
 if [[ $FORCE_DOWNLOAD -eq 1 ]]; then
   echo -e "${YLW}[INFO]${NC}  --download specified, forcing fresh download."
+  if [[ $pdf_count -gt 0 ]]; then
+    echo -e "${YLW}[INFO]${NC}  Removing existing PDFs from ${PDF_DIR}..."
+    rm -f "${PDF_DIR}"/*.pdf
+  fi
   echo ""
   download_pdfs
 elif [[ $pdf_count -gt 0 ]]; then
